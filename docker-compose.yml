@@ -1,0 +1,34 @@
+version: '3.5'
+services:
+  speechbrain: 
+    image: speechbrain
+    container_name: speechbrain_compose
+    tty: true
+    volumes: 
+      - "/home/speechbrain/speechbrain/recipes/VoxCeleb/SpeakerRec/voice_verification_api/SpeechEngine:/home/SpeechEngine"
+    command: 
+      bash /home/SpeechEngine/run.sh
+    networks: 
+      voice_verifier_net:
+        ipv4_address: 172.19.0.2
+
+  voice_verifier:
+    image: voice_verifier
+    container_name: voice_verifier_compose
+    tty: true
+    ports: 
+      - 3000:3000
+    volumes: 
+      - "/home/speechbrain/speechbrain/recipes/VoxCeleb/SpeakerRec/voice_verification_api/VoiceVerifier:/home/VoiceVerifier"
+    command:
+      bash /home/VoiceVerifier/run.sh
+    networks: 
+      voice_verifier_net:
+        ipv4_address: 172.19.0.3
+
+networks: 
+  voice_verifier_net:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.19.0.0/16
