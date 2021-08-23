@@ -1,0 +1,6 @@
+django
+djangorestframework
+redis
+speechbrain
+django-rest-swagger
+drf_yasg
