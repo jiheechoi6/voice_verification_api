@@ -1,8 +1,10 @@
+from http.client import responses
 from django.http.response import HttpResponse, JsonResponse
 from django.db import IntegrityError
 from rest_framework.viewsets import ViewSet
 from rest_framework import status
 from rest_framework.parsers import *
+from drf_yasg import openapi
 from django.conf import settings
 import logging
 
@@ -55,13 +57,13 @@ class VerifierViewSet(ViewSet):
         # save voiceprint to db
         voiceprintstr = base64.b64encode(np.array(voiceprint)).decode('utf-8')  # stringify voiceprint
         newVP = Voiceprint(username=user_id, voiceprint=voiceprintstr)
-        try: 
+        try:
             newVP.save()
         except IntegrityError as e:
             if 'UNIQUE constraint' in e.args[0]:  #### This is subject to change with version control
                 return HttpResponse(status=status.HTTP_409_CONFLICT)
 
-        activitylogger.info("Enrolled " + user_id)  # log to file (found in logs/activity_log/)
+        activitylogger.info("Enrolled User \"" + user_id + "\"")  # log to file (found in logs/activity_log/)
 
         return HttpResponse(status=status.HTTP_200_OK)
 
@@ -86,7 +88,7 @@ class VerifierViewSet(ViewSet):
             return JsonResponse({"detail": "A user with this external ID doesn't exist"}, status=460)
         # convert fetched binary voiceprint to python list
         serializer = VoiceprintSerializer(enrolledvp, many=True)
-        enrolledvp = base64.decodebytes(serializer.data[0]["voiceprint"].encode('utf-8')) 
+        enrolledvp = base64.decodebytes(serializer.data[0]["voiceprint"].encode('utf-8'))
         enrolledvp = np.frombuffer(enrolledvp, dtype=np.float64).tolist()
 
         # get voiceprint from stream with the uuid
@@ -101,13 +103,13 @@ class VerifierViewSet(ViewSet):
 
         # compare voiceprints
         res = requests.post(COMPARE_VP_URL, data=json.dumps({"voiceprint1":enrolledvp, "voiceprint2": curvp}), headers={'Content-Type':'application/json'})
-        if res.status_code != 200: 
+        if res.status_code != 200:
             return HttpResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         score = res.json()['score']
         result = "True" if score >= settings.THRESHOLD else "False"
 
-        activitylogger.info("Verified " + user_id + " (result: " + result + ", score: " + str(score) + ")")
+        activitylogger.info("Verified User \"" + user_id + "\"" + " (result: " + result + ", score: " + str(score) + ")")
 
         return JsonResponse({"result": result, "score": score}, status=200)
 
@@ -115,7 +117,8 @@ class VerifierViewSet(ViewSet):
     def get_voiceprint(self, request, *args, **kwargs):
         '''
         200: voiceprint successfully returned
-        460: no user is enrolled under this username'''
+        460: no user is enrolled under this username
+        '''
         user_id = kwargs['id']
 
         # get enrolled voiceprint from db
@@ -125,7 +128,7 @@ class VerifierViewSet(ViewSet):
         serializer = VoiceprintSerializer(enrolledvp, many=True)
         enrolledvp = base64.decodebytes(serializer.data[0]["voiceprint"].encode('utf-8'))
         # np.set_printoptions(precision=15)
-        enrolledvp = np.frombuffer(enrolledvp, dtype=np.float64).tolist()        
+        enrolledvp = np.frombuffer(enrolledvp, dtype=np.float64).tolist()
 
         return JsonResponse({"voiceprint": enrolledvp}, status=200)
 
@@ -147,6 +150,8 @@ class VerifierViewSet(ViewSet):
         '''
         users = Voiceprint.objects.all()
         num = users.delete()[0]
+        
+        activitylogger.info("All enrollments (" + str(num) + ") deleted")
 
         return JsonResponse({"deleted_count": num}, status=200)
     
@@ -155,13 +160,16 @@ class VerifierViewSet(ViewSet):
         '''
         200: successfully deleted
         400: no user with this id
-        500: Internal Server Error'''
+        500: Internal Server Error
+        '''
         user_id = kwargs["id"]
         try:
-            deleted = Voiceprint.objects.filter(username=user_id)[0].delete()
-            if deleted[0] == 0:
-                return HttpResponse(400)
+            todelete = Voiceprint.objects.filter(username=user_id)
+            if len(todelete) == 0:
+                return HttpResponse(status=400)
+            todelete[0].delete()
         except:
-            return HttpResponse(500)
+            return HttpResponse(status=500)
 
-        return HttpResponse(200)
+        activitylogger.info("Removed User \"" + user_id+ "\"")
+        return HttpResponse(status=200)
