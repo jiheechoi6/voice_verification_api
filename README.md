@@ -70,10 +70,19 @@ Install Docker Compose: https://docs.docker.com/compose/install/
 * **Configure Volumes**  
 Edit "volumes: " sections in docker-compose.yml to create volumes to local directories.
 
-* **Load images**
+* **Load images**  
+    Using image tar files
     ```sh
-    docker load < speechbrain.tar
+    # edit image names in docker-compose.yml from jihee4375/speechbrain, jihee4375/voice_verifier to speechbrain, voice_verifier
+    docker load < speechbrain.tar  
     docker load < voice_verifier.tar
+    ```
+    Load from Docker hub
+    ```sh
+    # https://hub.docker.com/repository/docker/jihee4375/speech_engine
+    docker pull jihee4375/speech_engine:latest  
+    # https://hub.docker.com/repository/docker/jihee4375/voice_verifier
+    docker pull jihee4375/voice_verifier:latest  
     ```
 * **Run application**
     ```
@@ -81,12 +90,11 @@ Edit "volumes: " sections in docker-compose.yml to create volumes to local direc
     ```
     Configuration in docker-compose.yml is set to automatically execute run.sh in SpeechEngine and VoiceVerifier at start of the application.
 
-
 ## Documentation
+SpeechEngine and VoiceVerifier have separate Swagger documentation that can be accessed once the server is running.  
 
-SpeechEngine and VoiceVerifier have separate Swagger documentation.  
 SpeechEngine: http://172.19.0.2:3000/swagger/  
-VoiceVerifier: http://171.19.0.3:3000/swagger/
+VoiceVerifier: http://{ip address of local server}:3000/swagger/ or http://171.19.0.3:3000/swagger/ inside local server  
 
 ## Logging
 
@@ -112,14 +120,11 @@ Same as SpeechEngine
 * activity_log  
     Logs all enrollment, deletion of enrollment and verification or any failures. 
     ```
-    2021-08-20 06:21:36,975 Enrolled test
-    2021-08-20 06:21:37,143 Verified test (result: True, score: 0.6239156723022461)
-    2021-08-20 06:25:56,782 Enrolled test1
-    2021-08-20 06:25:56,861 Enrolled test2
-    2021-08-20 06:25:56,929 Verified test1 (result: True, score: 0.9999998807907104)
-    2021-08-20 06:26:21,842 Enrolled test1
-    2021-08-20 06:26:21,933 Enrolled test2
-    2021-08-20 06:26:22,000 Verified test1 (result: True, score: 1.0)
+    2021-08-24 06:35:59,278 Enrolled test1
+    2021-08-24 06:35:59,379 Enrolled test2
+    2021-08-24 06:35:59,452 Verified test1 (result: True, score: 0.6241418719291687)
+    2021-08-24 06:35:59,517 Verified test2 (result: False, score: -0.09651359170675278)
+    2021-08-24 06:35:59,560 All enrollments (2) deleted
     ```
 
 ## API Routes
